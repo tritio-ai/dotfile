@@ -1,0 +1,52 @@
+#+title: Three-Repository Release Protocol
+
+* Ownership
+
+| Repository | Visibility | Responsibility |
+|-
+| =dotfile= | public | Configuration, installers, and orchestration. |
+| =dotfile-packages= | public | Pinned third-party artifacts and integrity metadata. |
+| =vault= | private | Encrypted/personal data and its private Emacs overlay. |
+
+The tracked =repos.tsv= describes paths, environment overrides, visibility,
+presence, and verification entry points. It deliberately contains no remote
+URLs. Existing =origin= remotes remain authoritative, and =repoctl.sh= accepts
+SSH remotes by default. The private vault is optional for normal checks but is
+required when preparing a three-repository release.
+
+* Commands
+
+#+begin_src sh
+sh repoctl.sh check
+sh repoctl.sh verify
+sh repoctl.sh prepare
+#+end_src
+
+=prepare= runs all verifiers, creates a mirror backup of every remote, and
+builds deterministic root-commit candidates without changing a worktree or
+branch. Its release directory is private under
+=${XDG_STATE_HOME:-~/.local/state}/dotfile-repos/releases=.
+
+Review the generated manifest and candidates, then explicitly publish:
+
+#+begin_src sh
+REPOCTL_CONFIRM=<release-id> sh repoctl.sh publish <release-directory>
+sh repoctl.sh verify-remote <release-directory>
+#+end_src
+
+Publishing uses =--force-with-lease= and refuses if =origin/main= changed after
+preparation or if a remote has branches/tags other than =main=. The three SSH
+pushes cannot be atomic. They run in dependency order: packages, public
+configuration, then private vault. A failed later push leaves earlier pushes
+valid and preserves all mirror backups.
+
+Rollback is equally explicit and only proceeds while the remote still points
+to the prepared snapshot:
+
+#+begin_src sh
+REPOCTL_CONFIRM=rollback:<release-id> sh repoctl.sh rollback <release-directory>
+#+end_src
+
+One commit means one reachable root commit under =refs/heads/main=. Server-side
+reflogs, backups, and unreachable objects remain under the SSH server owner's
+retention policy and cannot be erased by a client push.

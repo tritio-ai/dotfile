@@ -1,0 +1,15 @@
+*~
+\#*\#
+.\#*
+auto-save-list/
+tramp
+eshell/history
+eshell/lastdir
+eln-cache/
+elpa/
+straight/
+transient/
+projects
+projectile-bookmarks.eld
+.emacs.desktop
+.emacs.desktop.lock

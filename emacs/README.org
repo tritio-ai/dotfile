@@ -1,0 +1,170 @@
+#+title: Dotfile Emacs
+
+* Purpose
+
+This module installs a package-enabled Emacs profile through loader stubs in
+=~/.emacs.d/early-init.el= and =~/.emacs.d/init.el=. The real files stay in the
+repo, so edits remain version-controlled while the machine Emacs config follows
+the dotfiles checkout. Machine-local overrides live in =~/.emacs.local=.
+
+The visual style mirrors the repo WezTerm config's =Catppuccin Mocha= theme:
+dark Mocha frame/background colors, matching syntax/category colors, bold 13pt
+font fallback matching WezTerm, bar cursor, 95% GUI frame background opacity,
+Org faces, completion faces, VCS gutter colors, and Eat/term ANSI colors.
+
+* Package Cache
+
+The startfile installs packages from the sibling =dotfile-packages= cache first:
+
+#+begin_src sh
+sh update.sh emacs
+#+end_src
+
+Cached tarballs live under:
+
+#+begin_src text
+../dotfile-packages/emacs/packages/*.tar
+#+end_src
+
+If a tarball is missing, the startfile does not use the network unless
+=DOTFILE_ALLOW_NETWORK=1= is set. =DOTFILE_EMACS_OFFLINE=1= remains an explicit
+offline-only override.
+
+=use-package= is intentionally cache-preferred even on Emacs versions that ship
+a built-in copy, so the public profile tests the same package bootstrap path as
+the rest of the cached layer.
+
+* Install
+
+Install the machine config and prime package state:
+
+#+begin_src sh
+sh install.sh emacs
+#+end_src
+
+The installer copies =emacs/.emacs.local= to =~/.emacs.local= when missing and
+leaves an existing local file unchanged. It also leaves an existing
+=~/.emacs.d/init.el= or =~/.emacs.d/early-init.el= unchanged when that file is
+not already a dotfile loader stub. Set =DOTFILE_EMACS_SKIP_PRIME=1= to install
+the loader stubs and local template without running the batch package prime.
+
+* Temporary Test
+
+Run with an isolated temporary =$HOME= so the machine's normal Emacs config and
+package directory are untouched:
+
+#+begin_src sh
+sh emacs/test-start.sh
+#+end_src
+
+The GUI test primes the temporary package state in batch first, then opens Emacs
+warm with package installation disabled for the GUI process. This keeps first-run
+byte-compiler warnings out of the interactive test window while still producing
+local =.elc= files in the temporary state.
+
+Run a noninteractive smoke test:
+
+#+begin_src sh
+sh emacs/test-batch.sh
+#+end_src
+
+Keep the temporary home for inspection:
+
+#+begin_src sh
+DOTFILE_EMACS_KEEP_TEST_HOME=1 sh emacs/test-start.sh
+#+end_src
+
+* Included Packages
+
+- Completion: =vertico=, =marginalia=, =orderless=, =consult=, =corfu=, =cape=,
+  =corfu-terminal=.
+- Actions/templates: =embark=, =embark-consult=, =tempel=.
+- Prompt shortcuts: built-in =dotfile-emacs-prompt= with public templates in
+  =emacs/prompts.org=, plus =which-key= for shortcut discovery.
+- Navigation: =avy=.
+- Terminal: =eat=.
+- Editing and VCS: =diff-hl=, =multiple-cursors=, =rainbow-delimiters=.
+- File modes: =yaml-mode=, =dockerfile-mode=, =markdown-mode=.
+
+* User Manual
+
+** Everyday Keys
+
+- =C-c t= opens Eat, or switches to the existing =*eat*= buffer.
+- =C-x B= switches to =*scratch*= from normal buffers and Eat terminal maps.
+- =C--= decreases the global font size; =C-= / =C-+= increases it.
+- =C-x SPC= sets the mark; =C-x >= / =C-x <= jump to the end/beginning of
+  the buffer.
+- =C-c c= replaces text; =C-c q= toggles read-only mode; =C-c Q= opens the
+  current file with sudo through TRAMP.
+- =M-F= / =M-B= move by subwords.
+- =C-z ;= copies a prompt template from =emacs/prompts.org=; =C-c p= opens
+  the project command prefix.
+- =C-z := bridges the X PRIMARY selection into the regular clipboard when
+  running under a graphical display.
+
+** Legacy Compatibility
+
+The public profile also loads =legacy-compat.el= for safe, package-light
+features retained from the previous startup: centralized backups and auto-save
+files under the isolated Emacs state directory, bounded recent/history/kill
+lists, startup GC tuning with idle collection, matching-parenthesis and
+scrolling defaults, optional Semantic mode, Greek insertion at =C-c g=,
+vendored key chords (=,.=, =''=, =hh=), numbered windows at =C-c 0= through
+=C-c 8=, Dired helpers (=b=, =F=, =o=), ANSI-term fallback helpers, Emacs Lisp
+evaluation keys, language-aware compile commands, shell-command history,
+project templates/replacements, and the built-in project prefix.
+
+The project prefix is intentionally =C-c p=; prompt copying remains available
+at =C-z ;=. Function keys are not assigned by the public layer because =F3=
+and =F4= are reserved by the private vault configuration. The vault can load
+after this profile and override any public binding in =~/.emacs.local=.
+
+** Eat Terminal Modes
+
+Eat has three terminal input modes. Use =semi-char= for normal shell work,
+=char= when a terminal program should own the keyboard, and =emacs= when the
+terminal buffer should behave like a normal Emacs buffer.
+
+The dotfile profile adds mnemonic mode switches anywhere =C-c= is already an
+Eat command prefix:
+
+| Target mode | Key | Meaning |
+|-------------+-----+---------|
+| =emacs= | =C-c C-e= | Edit/navigate with Emacs commands. |
+| =semi-char= | =C-c C-s= | Shell-friendly hybrid mode. |
+| =char= | =C-c C-d= | Direct/raw terminal input. |
+
+In =char= mode, =C-c= remains terminal input so shells and full-screen terminal
+programs can still receive interrupts normally. Use =M-RET= or =C-M-m= to leave
+=char= mode and return to =semi-char= mode.
+
+The upstream Eat aliases still work: =C-c C-j= switches to =semi-char= mode,
+=C-c M-d= switches to =char= mode, and =C-c C-k= kills the terminal process.
+
+** Local Config
+
+Put private or machine-specific settings in =~/.emacs.local=. The installer
+creates it from =emacs/.emacs.local= only when missing, then leaves it unchanged
+on later installs.
+
+Good local settings include private Org paths, per-machine font sizes, local
+=exec-path= entries, and private keybindings. Do not put secrets or
+machine-specific paths in =emacs/init.el=.
+
+Built-in Org mode is configured with public-safe defaults: native source block
+fontification, inline image startup, clean source edit indentation, Babel support
+for =emacs-lisp=, =lisp=, and =shell=, plus local =C-c i= template insertion
+and =C-c w= block-content copy bindings. Private agenda, capture, publishing,
+encryption, and file-path settings are intentionally omitted.
+
+* Environment Variables
+
+- =DOTFILE_PACKAGES= points to the sibling package cache repo.
+- =DOTFILE_EMACS_PACKAGE_CACHE= overrides the exact package tarball directory.
+- =DOTFILE_EMACS_STATE_DIR= controls where package state is installed.
+- =DOTFILE_EMACS_OFFLINE=1= disables network fallback.
+- =DOTFILE_ALLOW_NETWORK=1= explicitly enables network fallback for missing
+  packages.
+- =DOTFILE_EMACS_NO_INSTALL=1= skips package installation and configures only
+  packages already present.

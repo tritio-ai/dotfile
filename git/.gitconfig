@@ -1,0 +1,32 @@
+[core]
+	editor = vim
+	pager = less -FRX
+	excludesfile = ~/.gitignore_global
+
+[init]
+	defaultBranch = main
+
+[pull]
+	rebase = true
+
+[push]
+	autoSetupRemote = true
+
+[fetch]
+	prune = true
+
+[color]
+	ui = auto
+
+[alias]
+	st = status -sb
+	co = checkout
+	br = branch
+	ci = commit
+	lg = log --oneline --graph --decorate -20
+	lgf = log --oneline --graph --decorate --all -40
+
+# Machine-local identity, credentials, and signing settings.
+# Created by git/install.sh as ~/.gitconfig.local when missing.
+[include]
+	path = ~/.gitconfig.local

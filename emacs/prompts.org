@@ -1,0 +1,95 @@
+#+TITLE: Prompt Templates
+
+Each top-level heading is one public prompt template for =C-z ;= or =C-c p=.
+
+- =KEY= is the stable template id.
+- =DESCRIPTION= is shown in the picker.
+- Use ={{name}}= placeholders anywhere in the body.
+- Use ={{case name}}=, ={{when value}}=, and ={{end}}= for simple branches.
+
+* Codex Implement
+:PROPERTIES:
+:KEY: codex-implement
+:DESCRIPTION: implement a focused change with verification
+:END:
+
+Project: {{project}}
+
+Task:
+{{task}}
+
+Constraints:
+- Read the relevant code before editing.
+- Keep the change scoped to the requested behavior.
+- Preserve existing style and public APIs unless the task requires otherwise.
+- Verify with the smallest meaningful test or command.
+
+Output:
+- Changed files and why.
+- Verification command and result.
+- Any remaining risk or follow-up.
+
+* Codex Review
+:PROPERTIES:
+:KEY: codex-review
+:DESCRIPTION: review code for bugs, regressions, and missing tests
+:END:
+
+Project: {{project}}
+
+Scope:
+{{scope}}
+
+Review stance:
+- Prioritize correctness, security, data loss, behavioral regressions, and test gaps.
+- Cite exact files and lines for each finding.
+- Do not spend space on praise or restating the implementation.
+- If there are no findings, say that clearly and list residual test risk.
+
+* Root Cause Debug
+:PROPERTIES:
+:KEY: root-cause
+:DESCRIPTION: diagnose a failing behavior before patching it
+:END:
+
+Project: {{project}}
+
+Failure:
+{{failure}}
+
+Instructions:
+- Reproduce or trace the failure before editing.
+- Identify the root cause, not only the symptom.
+- Fix the smallest responsible code path.
+- Verify the original failure no longer reproduces.
+
+* Performance Pass
+:PROPERTIES:
+:KEY: perf-optimize
+:DESCRIPTION: inspect a slow path and propose or apply an optimization
+:END:
+
+Project: {{project}}
+
+Slow path:
+{{slow_path}}
+
+Instructions:
+- Establish where time or allocation is spent.
+- Prefer algorithmic or I/O reductions over cosmetic refactors.
+- Keep semantics unchanged unless explicitly requested.
+- Report the before/after measurement or the best available proxy.
+
+* Check Commit
+:PROPERTIES:
+:KEY: check-commit
+:DESCRIPTION: inspect staged changes before committing
+:END:
+
+Project: {{project}}
+
+Instructions:
+- Review the staged diff for accidental files, secrets, generated noise, and broken tests.
+- Confirm the commit message explains why the change exists.
+- Run the relevant verification command if practical.
+- Report any blocker before committing.

@@ -1,0 +1,6 @@
+# OS and editor junk, shared across all repos on this machine.
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.swp

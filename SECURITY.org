@@ -1,0 +1,64 @@
+#+title: Dotfile Security Model
+
+* Trust Boundary
+
+The =dotfile= and =dotfile-packages= repositories are a matched pair accessed
+over the authenticated SSH remote. The package repository contains the binary
+and archive artifacts; its =SOURCES.tsv= pins their immutable upstream inputs
+and =SHA256SUMS= records every artifact hash. Signed Git tags are optional; the
+authoritative release reference can instead be the reviewed commit IDs from the
+SSH repositories plus the package checksums.
+
+Run the full local verification before an installation, release, or update:
+
+#+begin_src sh
+sh verify.sh
+#+end_src
+
+This invokes =../dotfile-packages/verify.sh=, which checks exact hashes,
+archive paths, source metadata, and available Emacs detached signatures. When
+an Emacs signing key is not installed locally, verification reports that fact
+and relies on the reviewed repository hash until the key is installed.
+
+* Network Policy
+
+Installers are offline-first. They consume only a package cache that passes
+=verify.sh=. Zsh and Emacs network fallback is disabled by default. Enable it
+only deliberately:
+
+#+begin_src sh
+DOTFILE_ALLOW_NETWORK=1 sh install.sh zsh
+DOTFILE_ALLOW_NETWORK=1 sh install.sh emacs
+#+end_src
+
+The Zsh fallback checks out fixed commits. Package updates use the immutable
+pins in =dotfile-packages/SOURCES.tsv=; edit and review that file before
+refreshing any artifact. Set =MYPROXY=host:port= locally when an update needs
+an HTTP proxy; do not commit private network addresses.
+
+* Privileged And Local Code
+
+- Platform package installation may call =sudo=.
+- Zsh installation can call =chsh= only when the user confirms or explicitly
+  sets =SET_DEFAULT_ZSH=1=.
+- =~/.zshrc.local=, =~/.emacs.local=, and =~/.wezterm.lua.local= are intentional
+  machine-local executable overrides. Treat them as private code.
+- Emacs Org Babel permits =emacs-lisp=, =lisp=, and =shell= source execution.
+  Do not execute untrusted Org source blocks.
+
+* Maintainer Release Checklist
+
+1. Review any edit to =SOURCES.tsv= and verify its pins against upstream.
+2. Run =sh update.sh <module>= in =dotfile-packages= only when refreshing that
+   module; do not use mutable upstream branches or latest URLs.
+3. Run =sh verify.sh= in both repositories.
+4. Review =git diff=, including =SHA256SUMS= and =VERSIONS.org=.
+5. Commit the reviewed changes and record the resulting commit IDs from both
+   SSH repositories alongside the package checksums. Signed tags may be added
+   later as an optional extra provenance check.
+
+* Reporting
+
+Do not publish suspected credentials or exploit details in an issue. Contact
+the maintainer privately and include the affected tag, artifact name, expected
+hash, and observed hash.

@@ -1,0 +1,12 @@
+-- Machine-local WezTerm config.
+-- This file is created as ~/.wezterm.lua.local by wezterm/install.sh when it does not exist.
+-- It runs as a Lua chunk with `config` and `wezterm` in scope, after the
+-- shared wezterm.lua, so assignments here override the shared setup.
+-- Keep machine-specific settings here; the shared config never touches this file.
+
+-- Example: force pwsh instead of the MSYS2 zsh default on this machine
+-- config.default_prog = { 'pwsh.exe', '-NoLogo', '-NoExit', '-Command', 'Set-PSReadLineOption -EditMode Emacs' }
+
+-- Example: per-machine appearance tweaks
+-- config.window_background_opacity = 1.0
+-- config.font_size = 14.0

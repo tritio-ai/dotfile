@@ -1,0 +1,10 @@
+# Machine-local git config.
+# This file is created as ~/.gitconfig.local by git/install.sh when it does not exist.
+# Keep identity, credentials, and signing settings here.
+
+# [user]
+# 	name = Your Name
+# 	email = you@example.com
+
+# [credential]
+# 	helper = store

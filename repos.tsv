@@ -1,0 +1,4 @@
+name	path	environment	visibility	presence	verify
+dotfile-packages	../dotfile-packages	DOTFILE_PACKAGES	public	optional	verify.sh
+dotfile	.	DOTFILE_ROOT	public	required	verify.sh
+vault	../vault	DOTFILE_VAULT	private	optional	verify.sh

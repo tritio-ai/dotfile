@@ -1,0 +1,9 @@
+#+title: Third-Party Code
+
+The vendored =emacs/key-chord.el= file is key-chord 0.8.2 by David Andersson,
+distributed under GNU GPL version 2 or later as stated in that file. It retains
+its upstream copyright, license notice, version, and source URL.
+
+All package archives and fonts are maintained in the separate
+=dotfile-packages= repository. Its =SOURCES.tsv= records immutable upstream
+inputs, and its =SHA256SUMS= covers every distributed artifact.

@@ -1,0 +1,142 @@
+#+title: Dotfile
+
+* Usage
+
+Install every module:
+
+#+begin_src sh
+sh install.sh all
+#+end_src
+
+Install one module:
+
+#+begin_src sh
+sh install.sh zsh
+sh install.sh emacs
+#+end_src
+
+Update vendored module artifacts:
+
+#+begin_src sh
+sh update.sh all
+sh update.sh zsh
+sh update.sh emacs
+#+end_src
+
+If a network proxy is required for updates, export =MYPROXY= before running the root updater:
+
+#+begin_src sh
+MYPROXY=127.0.0.1:7890 sh update.sh zsh
+#+end_src
+
+* Protocol
+
+This repo uses a module protocol:
+
+- =install.sh= installs or links runtime files onto the machine.
+- =update.sh= refreshes vendored artifacts stored in the repo.
+- Each top-level module owns its own directory, for example =zsh/=.
+- A module installer must be idempotent: rerunning it must not overwrite existing local user files.
+- A module updater may only rewrite files inside its own module directory, with one explicit exception: vendored package archives are written to the sibling =~/code/dotfile-packages= repo.
+- New modules should follow =doc/module.org= so parallel agents can work without touching each other's files.
+
+* Packages
+
+Vendored archives (for example Oh My Zsh tarballs) live in a separate repo at =~/code/dotfile-packages=, so this repo stays small and cloneable. Set =DOTFILE_PACKAGES= if the packages repo lives somewhere else. Installers require the sibling repository's =SOURCES.tsv= and =SHA256SUMS= verification before using cached artifacts.
+
+Installers check the packages repo first. Network fallback is disabled unless =DOTFILE_ALLOW_NETWORK=1= is explicitly set.
+
+Run the local verification before installing or publishing:
+
+#+begin_src sh
+sh verify.sh
+#+end_src
+
+The three-repository topology is declared in =repos.tsv=. Use =repoctl.sh= to
+check or verify present siblings and to prepare guarded one-commit releases;
+see =doc/repositories.org=. Remote URLs remain in each repository's local Git
+configuration and are never tracked by the public repository.
+
+* Emacs
+
+The =emacs= module installs a package-enabled profile through loader stubs in =~/.emacs.d/early-init.el= and =~/.emacs.d/init.el=, copies a machine-local template to =~/.emacs.local= when missing, then primes package state under =~/.emacs.d/dotfile-emacs=.
+
+Install or refresh the machine Emacs config:
+
+#+begin_src sh
+sh install.sh emacs
+#+end_src
+
+Run a graceful isolated test with a temporary =$HOME=:
+
+#+begin_src sh
+sh emacs/test-start.sh
+#+end_src
+
+Run a noninteractive smoke test:
+
+#+begin_src sh
+sh emacs/test-batch.sh
+#+end_src
+
+The startfile installs packages from the sibling cache first:
+
+#+begin_src text
+../dotfile-packages/emacs/packages/*.tar
+#+end_src
+
+Refresh that cache through the root updater:
+
+#+begin_src sh
+sh update.sh emacs
+#+end_src
+
+The default cached package layer includes Vertico/Marginalia/Orderless/Consult, Corfu/Cape, Eat, Embark, Tempel, which-key, avy, diff-hl, multiple-cursors, rainbow-delimiters, and lightweight file modes for YAML, Dockerfile, and Markdown. Eat mode switches use mnemonic aliases: =C-c C-e= for Emacs/edit mode, =C-c C-s= for semi-char shell mode, and =C-c C-d= for direct/raw char mode. =C-x B= switches to =*scratch*= globally and from Eat terminal keymaps. =C--= decreases the global font size; =C-= / =C-+= increase it. Built-in Org mode also gets public-safe defaults for source blocks, inline images, Babel =emacs-lisp=/=lisp=/=shell= support, generic template/copy helpers, and public prompt shortcuts backed by =emacs/prompts.org=. The Emacs profile mirrors this repo's WezTerm =Catppuccin Mocha= theme.
+
+* Zsh
+
+The =zsh= module is split by responsibility:
+
+- =zsh/install.sh= is the protocol entry: it installs the zsh binary, links the shared config, and installs Oh My Zsh.
+- =zsh/install-zsh.sh= is platform dependent. On Windows (detected via =uname=) it installs zsh through the MSYS2 =pacman=; on macOS through Homebrew; on Linux through the available system package manager.
+- =zsh/install-oh-my-zsh.sh= installs Oh My Zsh and zsh-autosuggestions. It prefers the offline archives in =~/code/dotfile-packages/zsh/=; when they are absent it falls back to the official Oh My Zsh install script and a =git clone= of zsh-autosuggestions.
+
+The installer links the shared config:
+
+#+begin_src sh
+~/.zshrc -> zsh/.zshrc
+#+end_src
+
+When symlinks are unavailable (native Windows without Developer Mode), it installs a one-line loader stub that =source=s the repo file instead, so =~= still tracks the repo; tools without a delegation mechanism fall back to a plain copy.
+
+It also copies the machine-local template only when the target file is missing:
+
+#+begin_src sh
+zsh/.zshrc.local -> ~/.zshrc.local
+#+end_src
+
+Use =~/.zshrc.local= for machine-specific proxy values, private aliases, secrets, and local PATH entries. Re-running the installer leaves that file unchanged.
+
+On Unix-like systems, an interactive zsh install prompts before changing the login shell with =chsh=. Set =SET_DEFAULT_ZSH=1= to force the change in unattended runs, or =SET_DEFAULT_ZSH=0= to skip it explicitly. On Windows, =chsh= does not exist; the shell is selected by the terminal. The =wezterm= module launches MSYS2 zsh through =default_prog=.
+
+* Git
+
+The =git= module links a shared =.gitconfig= and =.gitignore_global= and creates =~/.gitconfig.local= from a template when missing. If =user.name= or =user.email= is missing, an interactive install prompts with defaults from the machine username and short hostname, so pressing Enter accepts values like =stan= and =stan@nuc=. Set =GIT_USER_NAME= and =GIT_USER_EMAIL= to override those defaults for unattended installs. Put credential settings in the local file.
+
+* WezTerm
+
+The =wezterm= module installs its =.wezterm.lua= at =~/.wezterm.lua= and the vendored fonts. Like the zsh module, it copies a machine-local template to =~/.wezterm.lua.local= only when missing; the shared config sources that file last, so per-machine overrides (for example forcing pwsh on Windows) live there and survive reruns. On Windows it launches MSYS2 zsh (falling back to pwsh); other platforms use the system login shell.
+
+The config is the personal WezTerm setup: Catppuccin Mocha, Emacs-style key tables and mouse bindings, pwsh fallback with PSReadLine Emacs mode on Windows.
+
+Fonts: the installer copies the vendored Nerd Font files from =~/code/dotfile-packages/wezterm/fonts/= into the per-user fonts directory (Windows: =%LOCALAPPDATA%\Microsoft\Windows\Fonts= + HKCU registry, no admin required; macOS: =~/Library/Fonts=; Linux: =~/.local/share/fonts= + =fc-cache=). If the packages repo is missing, it prints a manual-install hint instead.
+
+* Updating Zsh Archives
+
+Refresh the zsh archives through the root updater:
+
+#+begin_src sh
+MYPROXY=127.0.0.1:7890 sh update.sh zsh
+#+end_src
+
+The refresh is delegated to the packages repo (see *Packages*), which rewrites the archives in =~/code/dotfile-packages/zsh/= and records upstream commits in its own =VERSIONS.org=.

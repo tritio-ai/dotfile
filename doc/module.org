@@ -1,0 +1,105 @@
+#+title: Module Protocol
+
+* Purpose
+
+This protocol lets agents add or update dotfile modules without colliding with parallel work in other modules.
+
+* Directory Ownership
+
+A module is a top-level directory such as =zsh/=, =emacs/=, or =wezterm/=.
+
+Module workers may edit only files inside their assigned module directory unless explicitly asked to change the root protocol files.
+
+Root protocol files are:
+
+- =README.org=
+- =install.sh=
+- =update.sh=
+- =doc/module.org=
+
+This boundary keeps parallel workers from editing the same files during normal module work.
+
+* Required Module Files
+
+Each installable module should provide:
+
+#+begin_src text
+<module>/install.sh
+#+end_src
+
+Each module with vendored dependencies or generated artifacts should also provide:
+
+#+begin_src text
+<module>/update.sh
+#+end_src
+
+Optional module docs must use =.org= files, for example:
+
+#+begin_src text
+<module>/README.org
+<module>/VERSIONS.org
+#+end_src
+
+* Install Contract
+
+Module =install.sh= files must be idempotent.
+
+- Create missing files, links, and directories.
+- Leave existing user-owned files unchanged.
+- Do not overwrite secrets, local overrides, or machine-specific config.
+- Check marker files before extracting vendored dependencies.
+- Print clear messages for skipped, created, and missing items.
+- Keep system-level actions explicit and minimal.
+
+A larger installer may be split into focused scripts, for example =install-zsh.sh= for the platform-dependent binary install and =install-oh-my-zsh.sh= for plugin setup, as long as the module's =install.sh= remains the single protocol entry point.
+
+On native Windows, symlinks may require extra privileges. Installers should first attempt a verified symlink, then fall back to a loader stub that delegates to the repo file (=source=, =source-file=, =[include]=, or =dofile= depending on the tool) so $HOME keeps tracking the repo, and copy only when the tool has no delegation mechanism. Say which mode was used.
+
+The root installer dispatches modules with:
+
+#+begin_src sh
+sh install.sh all
+sh install.sh zsh
+#+end_src
+
+* Update Contract
+
+Module =update.sh= files refresh repo-owned artifacts only inside that module directory.
+
+- Download or regenerate vendored dependencies.
+- Record source versions when artifacts are refreshed.
+- Do not modify =~=, system paths, or files in other modules.
+- Use environment variables for machine-specific network settings.
+- Keep generated archive names stable so diffs are easy to review.
+
+Exception: vendored package archives are maintained by the sibling packages repo at =~/code/dotfile-packages= (override with =DOTFILE_PACKAGES=), keeping large binaries out of this repo. A module updater delegates to the packages repo's own updater rather than downloading artifacts itself, and the version record lives in the packages repo's =VERSIONS.org=.
+
+The root updater dispatches modules with:
+
+#+begin_src sh
+sh update.sh all
+sh update.sh zsh
+#+end_src
+
+* New Module Checklist
+
+For a new module named =tool=:
+
+#+begin_src sh
+mkdir -p tool
+$EDITOR tool/install.sh
+$EDITOR tool/update.sh
+#+end_src
+
+Keep all module-specific files under =tool/=. Do not change root scripts or other module directories unless the task explicitly asks for protocol changes.
+
+Before finishing module work, run the smallest relevant checks:
+
+#+begin_src sh
+sh -n tool/install.sh
+sh -n tool/update.sh
+sh install.sh tool
+sh update.sh tool
+#+end_src
+
+Skip checks that do not apply, for example =tool/update.sh= when the module has no updater.

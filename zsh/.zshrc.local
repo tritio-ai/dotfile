@@ -1,0 +1,16 @@
+# Machine-local zsh config.
+# This file is copied to ~/.zshrc.local by zsh/install.sh when it does not exist.
+# Keep secrets, machine-specific PATH entries, and private aliases here.
+
+export MYPROXY="localhost:7890"
+
+# Example: machine-specific PATH entries
+# export PATH="$HOME/.local/bin:$PATH"
+
+# Example: private aliases
+# alias work='cd "$HOME/code/work"'
+
+# Example: tool initialization that only exists on this machine
+# if command -v mise >/dev/null 2>&1; then
+#   eval "$(mise activate zsh)"
+# fi
